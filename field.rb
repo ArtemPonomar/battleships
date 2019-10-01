@@ -32,7 +32,14 @@ class Field
       ship_location << curr_cell
     end
     new_ship = Ship.new(ship_location)
-    @ships << new_ship
+    if (true) #вставить проверку, можно ли там поставить корабль
+      new_ship.location.each do |cell|
+        cell.has_ship = true
+      end
+      @ships << new_ship
+      return true
+    end
+    return false
   end
 
   def shot(x, y)
@@ -42,26 +49,62 @@ class Field
       report = ship.report_damage(x, y)
       return report if report == 'damaged'
       if report == 'destroyed'
+        surround_ship(ship)
+        return report
+      end
     end
+    return 'missed'
   end
 
-  if ship.re
-  end
-end
+  def new_ship_valid?
 
-def to_s
-  result = ""
-  for i in (0...@cells.size)
-    result += @cells[i].join(" ")
-    result += "\n"
   end
-  result
-end
+
+  def surround_ship(ship)
+    get_surrounding_cells(ship).each { |cell| cell.was_shot = true}
+  end
+
+  def get_surrounding_cells(ship)
+    result = Array.new
+    ship.location.each do |cell|
+      root_i = cell.row
+      root_j = cell.column
+      for i_offset in (-1..1)         #
+        for j_offset in (-1..1)       #going over every cell in a radius of one cell
+          curr_i = root_i + i_offset  #
+          curr_j = root_j + j_offset  #
+          if curr_i < @cells.size && curr_i >= 0      #checking if index i out of bounds
+            if curr_j < @cells[0].size && curr_j >= 0 #checking if index j out of bounds
+              curr_cell = @cells[curr_i][curr_j]
+              if !ship.location.include?(curr_cell)   #adding to result array, only if cell isn't a part of a current ship
+                if !result.include?(curr_cell)        #don't add cells, that are already in a result array
+                  result << curr_cell
+                end
+              end
+            end
+          end
+        end
+      end
+    end
+    result
+  end
+
+  def to_s
+    result = ""
+    for i in (0...@cells.size)
+      result += @cells[i].join(" ")
+      result += "\n"
+    end
+    result
+  end
 
 end
 
 f = Field.new(10)
-f.add_ship(0, 0, 4, 'horizontal')
-f.shot(0, 2)
-f.shot(1, 0)
+p f.add_ship(0, 0, 4, 'horizontal')
+p f.shot(0, 2)
+p f.shot(1, 0)
+p f.shot(0, 0)
+p f.shot(0, 1)
+p f.shot(0, 3)
 puts f

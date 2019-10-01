@@ -1,5 +1,5 @@
 class Ship
-attr_accessor :location, :state
+attr_accessor :location
   def initialize(location)
     @location = location
   end
@@ -15,8 +15,8 @@ attr_accessor :location, :state
   end
 
   def is_destroyed?
-    each do |cell|
-      return false if cell.was_hit == false
+    @location.each do |cell|
+      return false if cell.was_shot == false
     end
     return true
   end
