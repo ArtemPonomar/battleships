@@ -5,21 +5,13 @@ class Field
   def initialize(size)
     @ships = Array.new
     @cells = Array.new
-    for i in (0...size)
+    (0...size).each { |i|
       new_row = Array.new
-      for j in (0...size)
+      (0...size).each { |j|
         new_row << Cell.new(i, j)
-      end
+      }
       @cells << new_row
-    end
-  end
-
-  def cell_was_shot?(x, y)
-    return @cells[x][y].was_shot
-  end
-
-  def cell_has_ship?(x, y)
-    return @cells[x][y].has_ship
+    }
   end
 
   def all_ships_are_destroyed?
@@ -29,7 +21,7 @@ class Field
 
   def add_ship(row, column, size, orientation)
     if !ship_inside_field?(row, column, size, orientation)
-      raise ArgumentError, "ship coordinates beyond the playing field"
+      raise ArgumentError, "Ship coordinates beyond the playing field border."
     end
     ship_location = Array.new
     (0...size).each { |i|
@@ -39,18 +31,21 @@ class Field
       ship_location << curr_cell
     }
     new_ship = Ship.new(ship_location)
-    if (ship_can_be_placed?(new_ship)) #вставить проверку, можно ли там поставить корабль
+    if ship_can_be_placed?(new_ship)
       new_ship.location.each do |cell|
         cell.has_ship = true
       end
       @ships << new_ship
       return true
     end
-    return false
+    false
   end
 
-  def shot(x, y)
-    return false if @cells[x][y].was_shot == true
+  def shoot(x, y)
+    if x < @cells.size || y < @cells[0].size || x < 0 || y < 0
+      raise ArgumentError, "Coordinates beyond the playing field border."
+    end
+    raise ArgumentError, "This field was already shot at" if @cells[x][y].was_shot == true
     @cells[x][y].was_shot = true
     @ships.each do |ship|
       report = ship.report_damage(x, y)
@@ -60,66 +55,7 @@ class Field
         return report
       end
     end
-    return 'missed'
-  end
-
-  def ship_inside_field? (row, column, size, orientation)
-    if coordinates_belong_to_field(row, column)
-      if (orientation == 'horizontal')
-        return true if coordinates_belong_to_field(row, column + size)
-      end
-      if (orientation == 'vertical')
-        return true if coordinates_belong_to_field(row + size, column)
-      end
-    end
-    false
-  end
-
-  def ship_can_be_placed?(ship)
-    ship.location.each do |cell|
-      if cell.has_ship == true # shouldn't be a ship where you want to place a new ship
-        p cell.has_ship
-        raise ArgumentError, 'placing a ship on top of existing one'
-      end
-    end
-    get_surrounding_cells(ship).each do |cell|
-      if cell.has_ship == true # shouldn't be a ship to close to a new ship
-        raise ArgumentError, 'placing a ship too close to an existing one'
-      end
-    end
-    true
-  end
-
-  def coordinates_belong_to_field(row, column)
-    if (row < @cells.size && row >= 0)
-      if (column < @cells[0].size && column >= 0)
-        return true
-      end
-    end
-    false
-  end
-
-  def surround_ship(ship)
-    get_surrounding_cells(ship).each { |cell| cell.was_shot = true }
-  end
-
-  def get_surrounding_cells(ship)
-    result = Array.new
-    ship.location.each do |cell|
-      (cell.row - 1..cell.row + 1).each { |curr_i|         #
-        (cell.column - 1..cell.column + 1).each { |curr_j| #going over every cell in a radius of one cell
-          if coordinates_belong_to_field(curr_i, curr_j)
-            curr_cell = @cells[curr_i][curr_j]
-            if !ship.location.include?(curr_cell) #adding to result array, only if cell isn't a part of a current ship
-              if !result.include?(curr_cell) #don't add cells, that are already in a result array
-                result << curr_cell
-              end
-            end
-          end
-        }
-      }
-    end
-    result
+    'missed'
   end
 
   def to_s_with_fog_of_war
@@ -139,6 +75,66 @@ class Field
       result += @cells[i].join(" ")
       result += "\n"
     }
+    result
+  end
+
+  private
+
+  def ship_inside_field? (row, column, size, orientation)
+    if coordinates_belong_to_field(row, column)
+      if orientation == 'horizontal'
+        return true if coordinates_belong_to_field(row, column + size - 1)
+      end
+      if orientation == 'vertical'
+        return true if coordinates_belong_to_field(row + size - 1, column)
+      end
+    end
+    false
+  end
+
+  def ship_can_be_placed?(ship)
+    ship.location.each do |cell|
+      if cell.has_ship == true # shouldn't be a ship where you want to place a new ship
+        raise ArgumentError, 'placing a ship on top of existing one'
+      end
+    end
+    get_surrounding_cells(ship).each do |cell|
+      if cell.has_ship == true # shouldn't be a ship to close to a new ship
+        raise ArgumentError, 'placing a ship too close to an existing one'
+      end
+    end
+    true
+  end
+
+  def coordinates_belong_to_field(row, column)
+    if row < @cells.size && row >= 0
+      if column < @cells[0].size && column >= 0
+        return true
+      end
+    end
+    false
+  end
+
+  def surround_ship(ship)
+    get_surrounding_cells(ship).each { |cell| cell.was_shot = true }
+  end
+
+  def get_surrounding_cells(ship)
+    result = Array.new
+    ship.location.each do |cell|
+      (cell.row - 1..cell.row + 1).each { |curr_i| #
+        (cell.column - 1..cell.column + 1).each { |curr_j| #going over every cell in a radius of one cell
+          if coordinates_belong_to_field(curr_i, curr_j)
+            curr_cell = @cells[curr_i][curr_j]
+            if !ship.location.include?(curr_cell) #adding to result array, only if cell isn't a part of a current ship
+              if !result.include?(curr_cell) #don't add cells, that are already in a result array
+                result << curr_cell
+              end
+            end
+          end
+        }
+      }
+    end
     result
   end
 
