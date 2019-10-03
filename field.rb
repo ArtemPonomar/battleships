@@ -19,6 +19,10 @@ class Field
     true
   end
 
+  def cell_was_shot?(i,j)
+    @cells[i][j].was_shot
+  end
+
   def add_ship(row, column, size, orientation)
     if !ship_inside_field?(row, column, size, orientation)
       raise ArgumentError, "Ship coordinates beyond the playing field border."
@@ -42,7 +46,7 @@ class Field
   end
 
   def shoot(x, y)
-    if x < @cells.size || y < @cells[0].size || x < 0 || y < 0
+    if (x >= @cells.size || y >= @cells[0].size || x < 0 || y < 0)
       raise ArgumentError, "Coordinates beyond the playing field border."
     end
     raise ArgumentError, "This field was already shot at" if @cells[x][y].was_shot == true
@@ -78,15 +82,24 @@ class Field
     result
   end
 
+  def coordinates_belong_to_field?(row, column)
+    if row < @cells.size && row >= 0
+      if column < @cells[0].size && column >= 0
+        return true
+      end
+    end
+    false
+  end
+
   private
 
   def ship_inside_field? (row, column, size, orientation)
-    if coordinates_belong_to_field(row, column)
+    if coordinates_belong_to_field?(row, column)
       if orientation == 'horizontal'
-        return true if coordinates_belong_to_field(row, column + size - 1)
+        return true if coordinates_belong_to_field?(row, column + size - 1)
       end
       if orientation == 'vertical'
-        return true if coordinates_belong_to_field(row + size - 1, column)
+        return true if coordinates_belong_to_field?(row + size - 1, column)
       end
     end
     false
@@ -106,15 +119,6 @@ class Field
     true
   end
 
-  def coordinates_belong_to_field(row, column)
-    if row < @cells.size && row >= 0
-      if column < @cells[0].size && column >= 0
-        return true
-      end
-    end
-    false
-  end
-
   def surround_ship(ship)
     get_surrounding_cells(ship).each { |cell| cell.was_shot = true }
   end
@@ -124,7 +128,7 @@ class Field
     ship.location.each do |cell|
       (cell.row - 1..cell.row + 1).each { |curr_i| #
         (cell.column - 1..cell.column + 1).each { |curr_j| #going over every cell in a radius of one cell
-          if coordinates_belong_to_field(curr_i, curr_j)
+          if coordinates_belong_to_field?(curr_i, curr_j)
             curr_cell = @cells[curr_i][curr_j]
             if !ship.location.include?(curr_cell) #adding to result array, only if cell isn't a part of a current ship
               if !result.include?(curr_cell) #don't add cells, that are already in a result array
@@ -145,13 +149,13 @@ end
 # f.add_ship(0, 0, 4, 'horizontal')
 # f.add_ship(2, 3, 3, 'vertical')
 #
-# p f.shot(0, 2)
-# p f.shot(1, 0)
-# p f.shot(0, 0)
-# p f.shot(0, 1)
-# p f.shot(0, 3)
-# p f.shot(2, 3)
-# p f.shot(2, 4)
-# p f.shot(3, 3)
+# p f.shoot(0, 2)
+# p f.shoot(1, 0)
+# p f.shoot(0, 0)
+# p f.shoot(0, 3)
+# p f.shoot(2, 3)
+# f.shoot(0,1)
+# p f.shoot(2, 4)
+# p f.shoot(3, 3)
 #
 # puts f.to_s_with_fog_of_war

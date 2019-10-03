@@ -17,8 +17,13 @@ class Game
     next_player = @p2
     loop do
       while current_player.make_a_shot
+        puts "#{current_player.name}'s assumption of #{next_player.name}'s field is:"
+        puts current_player.enemy_field.to_s_with_fog_of_war
+        break if current_player.won?
       end
       break if current_player.won?
+      puts "#{current_player.name}'s assumption of #{next_player.name}'s field is:"
+      puts current_player.enemy_field.to_s_with_fog_of_war
       temp = current_player
       current_player = next_player
       next_player = temp
